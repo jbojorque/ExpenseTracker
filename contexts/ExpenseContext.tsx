@@ -1,46 +1,57 @@
 // contexts/ExpenseContext.tsx
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { Expense, ExpenseContextType } from '../navigation/types'; // Import from your types file
+import { Expense, ExpenseContextType } from '../navigation/types';
+import { Currency, CURRENCIES } from '../utils/currency';
 
-// Create context with a default value (or null)
 const ExpenseContext = createContext<ExpenseContextType | null>(null);
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [currency, setCurrency] = useState<Currency>(CURRENCIES[0]); // Default to USD
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load expenses
+  // Load expenses and currency from storage on app start
   useEffect(() => {
-    const loadExpenses = async () => {
+    const loadData = async () => {
       try {
-        const jsonValue = await AsyncStorage.getItem('@expenses');
-        if (jsonValue !== null) {
-          setExpenses(JSON.parse(jsonValue) as Expense[]);
+        const expenseJson = await AsyncStorage.getItem('@expenses');
+        if (expenseJson !== null) setExpenses(JSON.parse(expenseJson));
+        
+        const currencyJson = await AsyncStorage.getItem('@currency');
+        if (currencyJson !== null && CURRENCIES.includes(currencyJson as Currency)) {
+          setCurrency(currencyJson as Currency);
         }
       } catch (e) {
-        console.error('Failed to load expenses.', e);
+        console.error('Failed to load data.', e);
       } finally {
         setIsLoading(false);
       }
     };
-    loadExpenses();
+    loadData();
   }, []);
 
-  // Save expenses
+  // Save expenses to storage whenever they change
   useEffect(() => {
+    if (isLoading) return; // Don't save while loading
     const saveExpenses = async () => {
       try {
-        const jsonValue = JSON.stringify(expenses);
-        await AsyncStorage.setItem('@expenses', jsonValue);
-      } catch (e) {
-        console.error('Failed to save expenses.', e);
-      }
+        await AsyncStorage.setItem('@expenses', JSON.stringify(expenses));
+      } catch (e) { console.error('Failed to save expenses.', e); }
     };
-    if (!isLoading) {
-      saveExpenses();
-    }
+    saveExpenses();
   }, [expenses, isLoading]);
+
+  // Save currency to storage whenever it changes
+  useEffect(() => {
+    if (isLoading) return; // Don't save while loading
+    const saveCurrency = async () => {
+      try {
+        await AsyncStorage.setItem('@currency', currency);
+      } catch (e) { console.error('Failed to save currency.', e); }
+    };
+    saveCurrency();
+  }, [currency, isLoading]);
 
   const addExpense = (data: Omit<Expense, 'id' | 'date'>) => {
     const newExpense: Expense = {
@@ -68,7 +79,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const getExpensesByCategory = (): { [key: string]: number } => {
     return expenses.reduce((acc, expense) => {
       const { category, amount } = expense;
-      acc[category] = (acc[category] || 0) + amount; // Amount is already a number
+      acc[category] = (acc[category] || 0) + amount;
       return acc;
     }, {} as { [key: string]: number });
   };
@@ -82,6 +93,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         editExpense,
         deleteExpense,
         getExpensesByCategory,
+        currency, // Expose currency
+        setCurrency, // Expose setCurrency
       }}
     >
       {children}

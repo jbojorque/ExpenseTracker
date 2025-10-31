@@ -1,14 +1,14 @@
 // screens/SettingsScreen.tsx
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import React from 'react';
-import { Alert, Button, StyleSheet, View } from 'react-native';
+import { View, Button, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
 import { useExpenses } from '../contexts/ExpenseContext';
+// Use the 'legacy' import if that's what fixed it for you
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing/';
+import { CURRENCIES, getCurrencySymbol } from '../utils/currency';
 
-// This screen doesn't need navigation props, but you could add them
-// using HomeTabScreenProps<'Settings'> if needed.
 export default function SettingsScreen() {
-  const { expenses } = useExpenses();
+  const { expenses, currency, setCurrency } = useExpenses();
 
   const exportToCSV = async () => {
     if (expenses.length === 0) {
@@ -19,7 +19,7 @@ export default function SettingsScreen() {
     const header = "ID,Date,Category,Amount,Note\n";
     const rows = expenses.map(exp => 
       // Ensure quotes in notes are escaped
-      `${exp.id},${exp.date},${exp.category},${exp.amount},"_NOTE_${exp.note.replace(/"/g, '""')}"`
+      `${exp.id},${exp.date},${exp.category},${exp.amount},"${exp.note.replace(/"/g, '""')}"`
     ).join("\n");
     
     const csvString = header + rows;
@@ -43,20 +43,76 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <Button 
-        title="Export Expenses to CSV" 
-        onPress={exportToCSV} 
-      />
-      
-      <View style={styles.placeholder}>
-        <Button title="Setup Reminders (TODO)" onPress={() => {}} disabled />
-        <Button title="Change Theme (TODO)" onPress={() => {}} disabled />
+      <Text style={styles.header}>Settings</Text>
+
+      {/* Currency Picker Section */}
+      <Text style={styles.label}>Choose Currency</Text>
+      <View style={styles.currencyContainer}>
+        {CURRENCIES.map((c) => (
+          <TouchableOpacity
+            key={c}
+            style={[
+              styles.currencyButton,
+              currency === c && styles.currencyButtonActive
+            ]}
+            onPress={() => setCurrency(c)}
+          >
+            <Text style={[
+                styles.currencyText,
+                currency === c && styles.currencyTextActive
+            ]}>
+              {c} ({getCurrencySymbol(c)})
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
+      
+      {/* Export Section */}
+      <View style={styles.section}>
+        <Text style={styles.label}>Export Data</Text>
+        <Button 
+          title="Export Expenses to CSV" 
+          onPress={exportToCSV} 
+        />
+      </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 40 },
-  placeholder: { marginTop: 40, gap: 15 }
+  container: { flex: 1, padding: 20 },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  label: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
+  currencyContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  currencyButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+  },
+  currencyButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  currencyText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  currencyTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  section: {
+    marginTop: 40,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 20,
+  }
 });

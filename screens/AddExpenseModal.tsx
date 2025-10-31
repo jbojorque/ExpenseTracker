@@ -1,23 +1,30 @@
 // screens/AddExpenseModal.tsx
-import React, { useEffect, useState } from 'react';
-import { Button, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, TextInput, Button, StyleSheet, ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { useExpenses } from '../contexts/ExpenseContext';
-import { RootStackScreenProps } from '../navigation/types'; // Import the correct prop type
+import { RootStackScreenProps } from '../navigation/types';
+import { getCurrencySymbol } from '../utils/currency';
 
+// These are the categories the user can select
 const CATEGORIES = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Other'];
 
-// Use the RootStackScreenProps for this modal screen
 export default function AddExpenseModal({ navigation, route }: RootStackScreenProps<'AddExpenseModal'>) {
-  const { addExpense, editExpense } = useExpenses();
+  // Get currency context
+  const { addExpense, editExpense, currency } = useExpenses(); 
   
-  // Type-safe route params!
+  // Check if we are editing or creating
   const expenseToEdit = route.params?.expenseToEdit;
   const isEditing = !!expenseToEdit;
 
+  // Setup component state
   const [amount, setAmount] = useState(expenseToEdit?.amount.toString() || '');
-  const [category, setCategory] = useState(expenseToEdit?.category || CATEGORIES[0]);
+  const [category, setCategory] = useState(expenseToEdit?.category || ''); // Default to ''
   const [note, setNote] = useState(expenseToEdit?.note || '');
 
+  // Set the modal title
   useEffect(() => {
     navigation.setOptions({
       title: isEditing ? 'Edit Expense' : 'Add Expense',
@@ -26,30 +33,40 @@ export default function AddExpenseModal({ navigation, route }: RootStackScreenPr
 
   const handleSubmit = () => {
     const parsedAmount = parseFloat(amount);
-
+    
+    // --- Validation ---
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       alert('Please enter a valid amount.');
       return;
     }
+    if (!category) { 
+      alert('Please select a category.');
+      return;
+    }
+    // --------------------
 
-    const expenseData = {
-      amount: parsedAmount,
-      category,
-      note,
+    const expenseData = { 
+      amount: parsedAmount, 
+      category, 
+      note 
     };
 
     if (isEditing) {
-      editExpense({ ...expenseToEdit, ...expenseData });
+      // Pass all old data + new data to edit
+      editExpense({ ...expenseToEdit!, ...expenseData }); 
     } else {
+      // Pass just new data to add
       addExpense(expenseData);
     }
-
+    
+    // Go back to the previous screen
     navigation.goBack();
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.label}>Amount</Text>
+      {/* Amount Input */}
+      <Text style={styles.label}>Amount ({getCurrencySymbol(currency)})</Text>
       <TextInput
         style={styles.input}
         placeholder="0.00"
@@ -58,14 +75,31 @@ export default function AddExpenseModal({ navigation, route }: RootStackScreenPr
         onChangeText={setAmount}
       />
 
+      {/* Category Selector */}
       <Text style={styles.label}>Category</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g., Food"
-        value={category}
-        onChangeText={setCategory}
-      />
+      <View style={styles.categoryContainer}>
+        {CATEGORIES.map((cat) => (
+          <TouchableOpacity
+            key={cat}
+            style={[
+              styles.categoryButton,
+              // Apply 'active' style if this category is selected
+              category === cat && styles.categoryButtonActive 
+            ]}
+            onPress={() => setCategory(cat)}
+          >
+            <Text style={[
+              styles.categoryText,
+              // Apply 'active' text style if this category is selected
+              category === cat && styles.categoryTextActive
+            ]}>
+              {cat}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       
+      {/* Note Input */}
       <Text style={styles.label}>Note (Optional)</Text>
       <TextInput
         style={[styles.input, styles.multilineInput]}
@@ -75,18 +109,30 @@ export default function AddExpenseModal({ navigation, route }: RootStackScreenPr
         multiline
       />
       
-      <Button
-        title={isEditing ? 'Update Expense' : 'Add Expense'}
-        onPress={handleSubmit}
-      />
+      {/* Submit Button */}
+      <View style={styles.submitButton}>
+        <Button
+          title={isEditing ? 'Update Expense' : 'Add Expense'}
+          onPress={handleSubmit}
+        />
+      </View>
     </ScrollView>
   );
 }
 
-// ... Add the styles from the previous JS example ...
+// --- Styles ---
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  label: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
+  container: { 
+    flex: 1, 
+    padding: 20,
+    backgroundColor: '#f9f9f9' // Lighter background
+  },
+  label: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    marginBottom: 8, 
+    color: '#333' 
+  },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -96,8 +142,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
   },
-  multilineInput: {
-    height: 100,
-    textAlignVertical: 'top',
+  multilineInput: { 
+    height: 100, 
+    textAlignVertical: 'top' 
+  },
+  // --- New Category Button Styles ---
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  categoryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 20, // More rounded
+  },
+  categoryButtonActive: {
+    backgroundColor: '#007AFF', // Blue for active
+    borderColor: '#007AFF',
+  },
+  categoryText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  categoryTextActive: {
+    color: '#fff', // White text for active
+    fontWeight: 'bold',
+  },
+  // --- Wrapper for the submit button ---
+  submitButton: {
+    marginTop: 10,
   }
 });

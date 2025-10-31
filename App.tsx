@@ -1,17 +1,17 @@
 // App.tsx
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { ExpenseProvider } from './contexts/ExpenseContext';
-import { BottomTabParamList, RootStackParamList } from './navigation/types'; // Import types
+import { RootStackParamList, BottomTabParamList } from './navigation/types';
 
 // Import screens
-import AddExpenseModal from './screens/AddExpenseModal';
-import ExpenseListScreen from './screens/ExpenseListScreen';
 import HomeScreen from './screens/HomeScreen';
+import ExpenseListScreen from './screens/ExpenseListScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import AddExpenseModal from './screens/AddExpenseModal';
 
 // Create typed navigators
 const Tab = createBottomTabNavigator<BottomTabParamList>();

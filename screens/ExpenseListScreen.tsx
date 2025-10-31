@@ -1,11 +1,16 @@
 // screens/ExpenseListScreen.tsx
 import React from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useExpenses } from '../contexts/ExpenseContext';
-import { Expense, HomeTabScreenProps } from '../navigation/types'; // Import types
+import { HomeTabScreenProps, Expense } from '../navigation/types';
+import { getCurrencySymbol } from '../utils/currency'; // Import currency util
 
 export default function ExpenseListScreen({ navigation }: HomeTabScreenProps<'Expenses'>) {
-  const { expenses, deleteExpense, isLoading } = useExpenses();
+  // Get currency from the context
+  const { expenses, deleteExpense, isLoading, currency } = useExpenses();
+  
+  // Get the symbol to display
+  const currencySymbol = getCurrencySymbol(currency);
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -26,11 +31,13 @@ export default function ExpenseListScreen({ navigation }: HomeTabScreenProps<'Ex
         <Text style={styles.itemDate}>{new Date(item.date).toLocaleDateString()}</Text>
       </View>
       <View style={styles.itemActions}>
-        <Text style={styles.itemAmount}>${item.amount.toFixed(2)}</Text>
+        {/* Use currency symbol here */}
+        <Text style={styles.itemAmount}>
+          {currencySymbol}{item.amount.toFixed(2)}
+        </Text>
         <View style={styles.buttons}>
           <TouchableOpacity 
             style={[styles.button, styles.editButton]} 
-            // Pass the item to the modal for editing
             onPress={() => navigation.navigate('AddExpenseModal', { expenseToEdit: item })}
           >
             <Text style={styles.buttonText}>Edit</Text>
@@ -65,7 +72,6 @@ export default function ExpenseListScreen({ navigation }: HomeTabScreenProps<'Ex
   );
 }
 
-// ... Add the styles from the previous JS example ...
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10, backgroundColor: '#fff' },
   itemContainer: {

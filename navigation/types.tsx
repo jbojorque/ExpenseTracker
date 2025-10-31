@@ -1,7 +1,8 @@
-// types.ts
+// navigation/types.ts
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Currency } from '../utils/currency'; // Import our new type
 
 // The core data structure for an expense
 export type Expense = {
@@ -28,17 +29,12 @@ export type BottomTabParamList = {
 };
 
 // --- Screen Prop Types ---
-// This makes it easy to type your screens
 
 // Props for screens in the Root Stack
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, T>;
 
 // Props for screens in the Bottom Tab
-// We use CompositeScreenProps to combine (nest) the types
-// This gives "Home", "Expenses", and "Settings" screens access to the root stack's `navigation.navigate()`
-// (e.g., so HomeScreen can call `navigation.navigate('AddExpenseModal')`)
-
 export type HomeTabScreenProps<T extends keyof BottomTabParamList> =
   CompositeScreenProps<
     BottomTabScreenProps<BottomTabParamList, T>,
@@ -53,4 +49,9 @@ export type ExpenseContextType = {
   editExpense: (updatedExpense: Expense) => void;
   deleteExpense: (id: string) => void;
   getExpensesByCategory: () => { [key: string]: number };
+  
+  // --- Added for currency ---
+  currency: Currency;
+  setCurrency: (currency: Currency) => void;
+  // --------------------------
 };
