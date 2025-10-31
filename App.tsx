@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { ExpenseProvider } from './contexts/ExpenseContext';
-import { BottomTabParamList, RootStackParamList } from './types'; // Import types
+import { BottomTabParamList, RootStackParamList } from './navigation/types'; // Import types
 
 // Import screens
 import AddExpenseModal from './screens/AddExpenseModal';
