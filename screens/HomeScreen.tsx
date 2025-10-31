@@ -18,6 +18,15 @@ const chartConfig = {
   strokeWidth: 2,
 };
 
+// --- Helper function for number formatting ---
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+// ------------------------------------------
+
 export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
   const { expenses, getExpensesByCategory, currency } = useExpenses();
 
@@ -27,23 +36,15 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
 
   const categoryColors = ['#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0', '#00BCD4'];
 
-  // --- THIS IS THE FIX ---
-  // The 'legendFontColor' and 'legendFontSize' props control the labels
-  // INSIDE the pie chart slices. I've set them to visible values.
-  const sortedCategories = Object.keys(categoryData)
+  // Data for the PieChart
+  const chartData = Object.keys(categoryData)
     .sort((a, b) => categoryData[b] - categoryData[a])
     .map((key, index) => ({
       name: key,
       amount: categoryData[key],
       color: categoryColors[index % categoryColors.length],
       population: categoryData[key], // Required by the type
-      legendFontColor: "#fff", // Use white text for the labels
-      legendFontSize: 14,     // Use a 14px font size
     }));
-  // -----------------------
-  
-  // Data for the PieChart
-  const chartData = sortedCategories;
 
   return (
     <ScrollView style={styles.container}>
@@ -51,9 +52,11 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
       
       <View style={styles.totalCard}>
         <Text style={styles.totalText}>Total Spending</Text>
+        {/* --- THIS IS THE CHANGE --- */}
         <Text style={styles.totalAmount}>
-          {currencySymbol}{totalSpending.toFixed(2)}
+          {currencySymbol}{formatNumber(totalSpending)}
         </Text>
+        {/* ------------------------ */}
       </View>
       
       <TouchableOpacity 
@@ -74,7 +77,7 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
           </View>
         ) : (
           <>
-            {/* 1. PIE CHART - (Showing percentages) */}
+            {/* 1. PIE CHART - (Clean and Centered) */}
             <PieChart
               data={chartData}
               width={chartContainerWidth} 
@@ -83,13 +86,12 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
               accessor={"amount"}
               backgroundColor={"transparent"}
               paddingLeft="75" // This keeps it centered
-              hasLegend={false} // Hides the ugly side-legend
-              absolute={false} // 'false' shows percentages
+              hasLegend={false} // This hides all labels
             />
 
             {/* 2. CATEGORY BREAKDOWN LIST (Our good legend) */}
             <View style={styles.legendContainer}>
-              {sortedCategories.map((item) => {
+              {chartData.map((item) => {
                 const percentage = totalSpending > 0 ? (item.amount / totalSpending * 100) : 0;
                 return (
                   <View key={item.name} style={styles.legendItem}>
@@ -97,9 +99,11 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
                     <Text style={styles.legendText}>{item.name}</Text>
                     <View style={styles.legendAmountContainer}>
                        <Text style={styles.legendPercentage}>{percentage.toFixed(0)}%</Text>
+                       {/* --- THIS IS THE CHANGE --- */}
                        <Text style={styles.legendAmount}>
-                         {currencySymbol}{item.amount.toFixed(2)}
+                         {currencySymbol}{formatNumber(item.amount)}
                        </Text>
+                       {/* ------------------------ */}
                     </View>
                     <View style={styles.progressBarBackground}>
                       <View style={[styles.progressBarFill, { 
@@ -145,7 +149,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   totalText: { fontSize: 18, color: '#555' },
-  totalAmount: { fontSize: 40, fontWeight: 'bold', marginTop: 10 },
+  totalAmount: { 
+    fontSize: 40, 
+    fontWeight: 'bold', 
+    marginTop: 10,
+    // Fix for some Android fonts that cut off the '₱' symbol
+    includeFontPadding: false, 
+  },
   addExpenseButton: {
     flexDirection: 'row',
     backgroundColor: '#007AFF',
