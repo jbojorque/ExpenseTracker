@@ -95,7 +95,7 @@ export default function SettingsScreen() {
 
       {/* --- NEW SECTION --- */}
       <View style={styles.section}>
-        <Text style={styles.label}>Danger Zone</Text>
+        <Text style={styles.label}>Reset</Text>
         <Button 
           title="Reset Current Period" 
           color="#DC3545" // Red color
