@@ -4,16 +4,11 @@
     "slug": "ExpenseTracker",
     "version": "1.0.0",
     "orientation": "portrait",
-
-    // This is your main app icon (1024x1024, no transparency)
     "icon": "./assets/expensify.png",
-
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-
-    // This is your splash screen (logo file, can be transparent)
     "splash": {
-      "image": "./assets/expensify.png", 
+      "image": "./assets/expensify.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -21,16 +16,21 @@
       "supportsTablet": true
     },
     "android": {
-      // This uses your logo file for the foreground
       "adaptiveIcon": {
-        "foregroundImage": "./assets/expensify.png", 
+        "foregroundImage": "./assets/expensify.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.jb.expensify.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d7c32afa-75ad-4372-9672-e3edb6f763d7"
+      }
     }
   }
 }
