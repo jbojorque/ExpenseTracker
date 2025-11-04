@@ -1,19 +1,18 @@
 // screens/HomeScreen.tsx
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { HomeTabScreenProps } from '../navigation/types';
 import { getCurrencySymbol } from '../utils/currency';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
-// --- 1. Import Reanimated and navigation hook ---
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withDelay } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
-// ----------------------------------------------
 
 const screenWidth = Dimensions.get("window").width;
 const chartContainerWidth = screenWidth - 40;
 
+// --- Chart Config for Pie Chart ---
 const chartConfig = {
   backgroundGradientFrom: '#ffffff',
   backgroundGradientTo: '#ffffff',
@@ -37,44 +36,35 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
 
   const categoryColors = ['#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0', '#00BCD4'];
 
+  // This is the clean data mapping
   const chartData = Object.keys(categoryData)
     .sort((a, b) => categoryData[b] - categoryData[a])
     .map((key, index) => ({
       name: key,
       amount: categoryData[key],
       color: categoryColors[index % categoryColors.length],
-      population: categoryData[key], 
+      population: categoryData[key], // Required by the type
     }));
 
-  // --- 2. Set up animated values ---
-  // We'll animate opacity (from 0 to 1)
+  // Animated values
   const opacity = useSharedValue(0);
-  // And Y-position (from 20 (down) to 0 (neutral))
   const translateY = useSharedValue(20);
 
-  // --- 3. Trigger animation on screen focus ---
+  // Trigger animation on screen focus
   useFocusEffect(
     useCallback(() => {
-      // Set initial values (hidden)
       opacity.value = 0;
       translateY.value = 20;
-      
-      // Start animations
-      // withTiming is a smooth animation, withDelay staggers them
       opacity.value = withTiming(1, { duration: 500 });
       translateY.value = withTiming(0, { duration: 500 });
-      
-      // Return a cleanup function to reset on blur (optional)
       return () => {
         opacity.value = 0;
         translateY.value = 20;
       };
     }, [])
   );
-  // ------------------------------------------
 
-  // --- 4. Create animated styles ---
-  // Style for the first card
+  // Animated styles
   const cardAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: opacity.value,
@@ -82,34 +72,27 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
     };
   });
 
-  // Staggered style for the button
   const buttonAnimatedStyle = useAnimatedStyle(() => {
     return {
-      // Start this animation 100ms after the first
       opacity: withDelay(100, withTiming(opacity.value)),
       transform: [{ translateY: withDelay(100, withTiming(translateY.value)) }],
     };
   });
 
-  // Staggered style for the chart
   const chartAnimatedStyle = useAnimatedStyle(() => {
     return {
-      // Start this 200ms after the first
       opacity: withDelay(200, withTiming(opacity.value)),
       transform: [{ translateY: withDelay(200, withTiming(translateY.value)) }],
     };
   });
-  // ---------------------------------
 
   return (
-    <ScrollView style={styles.container}>
-      {/* We can animate the logo too */}
-      <Animated.Image 
-        source={require('../assets/images/logo.png')} 
-        style={[styles.logo, cardAnimatedStyle]} // Use the first animation
-      />
+    <Animated.ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.scrollContentContainer}
+    >
+      <Text style={styles.header}>Expense Dashboard</Text>
       
-      {/* --- 5. Apply styles to Animated.View --- */}
       <Animated.View style={[styles.totalCard, cardAnimatedStyle]}>
         <Text style={styles.totalText}>Total Spending</Text>
         <Text style={styles.totalAmount}>
@@ -137,6 +120,7 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
           </View>
         ) : (
           <>
+            {/* 1. PIE CHART - (Clean, Centered, No Labels) */}
             <PieChart
               data={chartData}
               width={chartContainerWidth} 
@@ -144,10 +128,12 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
               chartConfig={chartConfig}
               accessor={"amount"}
               backgroundColor={"transparent"}
-              paddingLeft="75" 
-              hasLegend={false} 
+              paddingLeft="75" // This keeps it centered
+              hasLegend={false} // This hides all labels
+              // No 'absolute' prop
             />
 
+            {/* 2. CATEGORY BREAKDOWN LIST (Our good legend) */}
             <View style={styles.legendContainer}>
               {chartData.map((item) => {
                 const percentage = totalSpending > 0 ? (item.amount / totalSpending * 100) : 0;
@@ -175,7 +161,7 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
           </>
         )}
       </Animated.View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
@@ -183,16 +169,18 @@ export default function HomeScreen({ navigation }: HomeTabScreenProps<'Home'>) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    padding: 20,
     backgroundColor: '#f4f4f4',
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
-  logo: {
-    width: 150,
-    height: 80,
-    resizeMode: 'contain',
-    alignSelf: 'center',
+  scrollContentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
     marginBottom: 20,
+    textAlign: 'center' 
   },
   totalCard: {
     backgroundColor: 'white',

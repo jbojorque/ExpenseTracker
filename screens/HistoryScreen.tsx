@@ -1,9 +1,12 @@
 // screens/HistoryScreen.tsx
-import React from 'react';
+import React, { useCallback } from 'react'; // <-- Import useCallback
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { HomeTabScreenProps, HistoryItem } from '../navigation/types';
 import { getCurrencySymbol } from '../utils/currency';
+// --- Import Reanimated and navigation hook ---
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Helper function to format the number with commas
 const formatNumber = (num: number) => {
@@ -17,12 +20,38 @@ export default function HistoryScreen({ navigation }: HomeTabScreenProps<'Histor
   const { history, currency } = useExpenses();
   const currencySymbol = getCurrencySymbol(currency);
 
+  // --- Set up animated values ---
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+
+  // --- Trigger animation on screen focus ---
+  useFocusEffect(
+    useCallback(() => {
+      opacity.value = 0;
+      translateY.value = 20;
+      
+      opacity.value = withTiming(1, { duration: 500 });
+      translateY.value = withTiming(0, { duration: 500 });
+      
+      return () => {
+        opacity.value = 0;
+        translateY.value = 20;
+      };
+    }, [])
+  );
+
+  // --- Create animated style ---
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
+      flex: 1, // Make sure it fills the space
+    };
+  });
+  // ---------------------------------
+
   const renderHistoryItem = ({ item }: { item: HistoryItem }) => (
-    <TouchableOpacity 
-      style={styles.itemContainer} 
-      // You could later navigate to a detail screen
-      // onPress={() => navigation.navigate('HistoryDetail', { historyId: item.id })}
-    >
+    <TouchableOpacity style={styles.itemContainer}>
       <View>
         <Text style={styles.itemDate}>
           {new Date(item.date).toLocaleDateString()}
@@ -38,7 +67,8 @@ export default function HistoryScreen({ navigation }: HomeTabScreenProps<'Histor
   );
 
   return (
-    <View style={styles.container}>
+    // --- Apply animated style to a wrapper View ---
+    <Animated.View style={[styles.container, animatedStyle]}>
       {history.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No history yet.</Text>
@@ -52,9 +82,11 @@ export default function HistoryScreen({ navigation }: HomeTabScreenProps<'Histor
           data={history}
           renderItem={renderHistoryItem}
           keyExtractor={item => item.id}
+          // Add padding to the bottom of the list
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -103,5 +135,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1a1a1a',
+    includeFontPadding: false,
   },
 });

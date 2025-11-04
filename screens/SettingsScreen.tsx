@@ -1,13 +1,46 @@
 // screens/SettingsScreen.tsx
-import React from 'react';
-import { View, Button, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react'; // <-- Import useCallback
+import { View, Button, StyleSheet, Alert, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useExpenses } from '../contexts/ExpenseContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing/';
 import { CURRENCIES, getCurrencySymbol } from '../utils/currency';
+// --- Import Reanimated and navigation hook ---
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function SettingsScreen() {
-  const { expenses, currency, setCurrency, resetExpenses } = useExpenses(); // <-- Get resetExpenses
+  const { expenses, currency, setCurrency, resetExpenses } = useExpenses();
+
+  // --- Set up animated values ---
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+
+  // --- Trigger animation on screen focus ---
+  useFocusEffect(
+    useCallback(() => {
+      opacity.value = 0;
+      translateY.value = 20;
+      
+      opacity.value = withTiming(1, { duration: 500 });
+      translateY.value = withTiming(0, { duration: 500 });
+      
+      return () => {
+        opacity.value = 0;
+        translateY.value = 20;
+      };
+    }, [])
+  );
+
+  // --- Create animated style ---
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
+      flex: 1, // Make sure it fills the space
+    };
+  });
+  // ---------------------------------
 
   const exportToCSV = async () => {
     // ... (same as before)
@@ -35,8 +68,8 @@ export default function SettingsScreen() {
     }
   };
 
-  // --- NEW FUNCTION ---
   const handleReset = () => {
+    // ... (same as before)
     if (expenses.length === 0) {
       Alert.alert(
         "No Expenses",
@@ -44,7 +77,6 @@ export default function SettingsScreen() {
       );
       return;
     }
-    
     Alert.alert(
       "Reset Current Period",
       "Are you sure? This will move all current expenses to history and set your total spending to 0.",
@@ -53,15 +85,15 @@ export default function SettingsScreen() {
         { 
           text: "Reset", 
           style: "destructive", 
-          onPress: () => resetExpenses() // <-- Call the context function
+          onPress: () => resetExpenses()
         }
       ]
     );
   };
-  // --------------------
 
   return (
-    <View style={styles.container}>
+    // --- Apply animated style and use ScrollView ---
+    <Animated.ScrollView style={[styles.container, animatedStyle]}>
       <Text style={styles.header}>Settings</Text>
 
       <Text style={styles.label}>Choose Currency</Text>
@@ -93,23 +125,24 @@ export default function SettingsScreen() {
         />
       </View>
 
-      {/* --- NEW SECTION --- */}
       <View style={styles.section}>
-        <Text style={styles.label}>Reset</Text>
+        <Text style={styles.label}>Danger Zone</Text>
         <Button 
           title="Reset Current Period" 
           color="#DC3545" // Red color
           onPress={handleReset} 
         />
       </View>
-      {/* ----------------- */}
-
-    </View>
+    </Animated.ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { 
+    flex: 1, 
+    padding: 20,
+    backgroundColor: '#fff', // Changed to white
+  },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
   label: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
   currencyContainer: {
